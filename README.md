@@ -91,6 +91,57 @@ The AI is intentionally bounded for this demo:
 - Add SKU confirmation blocks missing required fields and duplicate SKU codes.
 - Receive stock confirmation blocks missing SKUs and non-positive quantities.
 
+## RAG Flow
+
+GitHub renders Mermaid diagrams in Markdown, so this section appears as a visual flowchart on the repository README.
+
+```mermaid
+flowchart TD
+    A[User asks a question in WMS Agent] --> B[Chatbot builds live warehouse documents]
+    B --> B1[SKU documents]
+    B --> B2[Order documents]
+    B --> B3[Stock movement documents]
+    B --> B4[Recent stock activity document]
+
+    B1 --> C[Send question, documents, and live WMS state to /api/agent]
+    B2 --> C
+    B3 --> C
+    B4 --> C
+
+    C --> D{Groq and OpenRouter keys configured?}
+    D -- No --> E[Return AI configuration fallback]
+    D -- Yes --> F[Groq action decision]
+
+    F --> G{Mutation action requested?}
+    G -- Receive stock --> H[Stream open_receive_stock_form action]
+    G -- Add SKU --> I[Stream open_add_sku_form action]
+    G -- No action --> J[Continue read-only RAG flow]
+
+    H --> J
+    I --> J
+
+    J --> K[OpenRouter embeddings]
+    K --> K1[Embed warehouse documents]
+    K --> K2[Embed user question]
+
+    K1 --> L[Local cosine similarity search]
+    K2 --> L
+
+    L --> M[Select top 5 relevant warehouse records]
+    M --> N[Build dynamic RAG context]
+
+    N --> O[Groq streaming answer]
+    O --> P[Stream tokens back to chatbot]
+    P --> Q[Render markdown answer and tables]
+
+    H --> R[User confirms controlled form]
+    I --> R
+    R --> S[Update local WMS state]
+    S --> T[Record stock movement when applicable]
+    T --> U[Next chat rebuilds fresh live documents]
+    U --> B
+```
+
 ## Example Chat Prompts
 
 Try these prompts in the WMS Agent sidebar:
